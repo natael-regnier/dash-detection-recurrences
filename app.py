@@ -135,12 +135,11 @@ def plot_timeline_with_clusters_meanshift_plotly(df, immat=None, fault=None):
 
 def parse_contents(contents, filename):
     """
-    Traite uniquement la feuille "360 J" et ignore la feuille "60 J".
+    Traite uniquement la feuille "360 J" et ignore les autres.
     """
     content_type, content_string = contents.split(',')
     decoded = base64.b64decode(content_string)
     xls = pd.ExcelFile(io.BytesIO(decoded))
-    # Utilisation exclusive de la feuille "360 J"
     df = xls.parse("360 J")
     nb_cols = df.shape[1]
     # Les 3 premières colonnes sont fixes, les suivantes correspondent aux jours
@@ -151,11 +150,11 @@ def parse_contents(contents, filename):
     df = insert_useful_column(df)
     df["IMMAT"] = df["IMMAT"].str.strip()
     df["FAULT"] = df["FAULT"].str.strip()
-
+    
     df_filtre = df[df["USEFUL"] & (df.filter(like="Day ").astype(bool).sum(axis=1) >= 3)]
     df_final = filter_rows_by_mean_gap(df_filtre, 1.2)
     filtered_df = calculate_recent_occurrences(df_final)
-
+    
     return df_final.to_json(date_format='iso', orient='split'), filtered_df.to_json(date_format='iso', orient='split')
 
 def generate_row_styles(data):
@@ -171,6 +170,7 @@ def generate_row_styles(data):
 # --- Initialisation de l'application Dash ---
 
 app = dash.Dash(__name__, suppress_callback_exceptions=True)
+server = app.server  # Expose le serveur Flask pour Gunicorn
 
 app.layout = html.Div([
     html.H1("Détection de récurrences"),
@@ -192,7 +192,7 @@ app.layout = html.Div([
         ),
         style={'width': '100%', 'display': 'flex', 'justifyContent': 'center', 'margin': '20px 0'}
     ),
-    # Conteneur principal en flex : tableau à gauche, graphique à droite
+    # Conteneur principal : tableau à gauche, graphique à droite
     html.Div([
         html.Div(
             dcc.Loading(
@@ -278,5 +278,4 @@ def update_figure(selected_rows, restyleData, processed_data, current_fig):
     return current_fig
 
 if __name__ == '__main__':
-    # L'application écoute sur 0.0.0.0 et utilise le port défini dans la variable d'environnement PORT
     app.run_server(debug=False, host='0.0.0.0', port=int(os.environ.get("PORT", 8050)))
