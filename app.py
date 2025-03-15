@@ -311,8 +311,10 @@ def update_figure(selected_rows, restyleData, processed_data, current_fig):
     else:
         return current_fig
 
+# --- Ajout de la variable 'server' pour Gunicorn ---
+server = app.server
+
 # --- Lancement de l'application en mode serveur ---
 
 if __name__ == '__main__':
-    # L'application écoute sur 0.0.0.0 et utilise le port défini dans la variable d'environnement PORT (Render.com le définit automatiquement)
     app.run_server(debug=False, host='0.0.0.0', port=int(os.environ.get("PORT", 8050)))
