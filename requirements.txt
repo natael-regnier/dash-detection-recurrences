@@ -5,4 +5,5 @@ numpy
 pandas
 matplotlib
 scikit-learn
+openpyxl
 gunicorn
