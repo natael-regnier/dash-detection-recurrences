@@ -10,13 +10,11 @@ from dash import dcc, html, Input, Output, dash_table, State
 from sklearn.cluster import MeanShift, estimate_bandwidth
 
 # --- Fonctions utilitaires ---
-
 def compute_bandwidth(X):
     """Calcule la largeur de bande pour MeanShift en tenant compte de l'écart type."""
     return max(estimate_bandwidth(X, quantile=0.2, n_samples=len(X)), np.std(X)/4, 1.0)
 
 # --- Fonctions de traitement des données ---
-
 def insert_useful_column(df):
     pannes_a_exclure = [
         "AUTO FLT A/THR OFF", "AUTO FLT AP OFF",
@@ -168,7 +166,6 @@ def generate_row_styles(data):
     ]
 
 # --- Initialisation de l'application Dash ---
-
 app = dash.Dash(__name__, suppress_callback_exceptions=True)
 server = app.server  # Expose le serveur Flask pour Gunicorn
 
@@ -278,4 +275,17 @@ def update_figure(selected_rows, restyleData, processed_data, current_fig):
     return current_fig
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get("PORT", 8050)))
+    import errno
+    base_port = int(os.environ.get("PORT", 8050))
+    port = base_port
+    while True:
+        try:
+            print(f"Tentative d'exécution sur le port {port}...")
+            app.run(debug=False, host='0.0.0.0', port=port)
+            break  # Sortir si l'application démarre correctement
+        except OSError as e:
+            if e.errno in [98, 10048]:  # 98 pour Linux, 10048 pour Windows
+                print(f"Le port {port} est déjà utilisé. Tentative sur le port {port + 1}...")
+                port += 1
+            else:
+                raise e
